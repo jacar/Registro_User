@@ -21,7 +21,7 @@ type RegistroContextType = {
     registro: Omit<Registro, "id" | "fechaRegistro" | "estado">,
   ) => Promise<{ success: boolean; message: string }>
   existeDocumento: (documento: string) => boolean
-  eliminarRegistro: (id: number) => void
+  eliminarRegistro: (id: number) => Promise<{ success: boolean; message?: string }>
 }
 
 const RegistroContext = createContext<RegistroContextType | undefined>(undefined)
@@ -30,92 +30,60 @@ const RegistroContext = createContext<RegistroContextType | undefined>(undefined
 export function RegistroProvider({ children }: { children: ReactNode }) {
   const [registros, setRegistros] = useState<Registro[]>([])
 
-  // Cargar registros del localStorage al iniciar
+  // Cargar registros desde la API al iniciar
   useEffect(() => {
-    const savedRegistros = localStorage.getItem("registros")
-    if (savedRegistros) {
+    async function loadRegistros() {
       try {
-        setRegistros(JSON.parse(savedRegistros))
+        const res = await fetch('/api/registros')
+        if (!res.ok) throw new Error('Error al cargar registros')
+        const data: Registro[] = await res.json()
+        setRegistros(data)
       } catch (error) {
-        console.error("Error al cargar registros:", error)
+        console.error('Error al cargar registros:', error)
       }
     }
+    loadRegistros()
   }, [])
-
-  // Guardar registros en localStorage cuando cambian
-  useEffect(() => {
-    if (registros.length > 0) {
-      localStorage.setItem("registros", JSON.stringify(registros))
-    }
-  }, [registros])
 
   // Verificar si ya existe un documento
   const existeDocumento = (documento: string): boolean => {
     return registros.some((reg) => reg.numeroDocumento === documento)
   }
 
-  // Agregar un nuevo registro
+  // Agregar un nuevo registro via API
   const agregarRegistro = async (
     nuevoRegistro: Omit<Registro, "id" | "fechaRegistro" | "estado">,
   ): Promise<{ success: boolean; message: string }> => {
-    // Verificar si el documento ya existe
-    if (existeDocumento(nuevoRegistro.numeroDocumento)) {
-      return {
-        success: false,
-        message: "Este número de documento ya se encuentra registrado en el sistema.",
+    try {
+      const res = await fetch('/api/registros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nuevoRegistro),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setRegistros((prev) => [...prev, data.registro])
+        return { success: true, message: 'Registro completado con éxito.' }
+      } else {
+        return { success: false, message: data.message || 'Error al registrar' }
       }
-    }
-
-    // Verificar si el horario ya está ocupado para ese día
-    const existeHorario = registros.some(
-      (r) => r.dia === nuevoRegistro.dia && r.hora === nuevoRegistro.hora
-    )
-    if (existeHorario) {
-      return {
-        success: false,
-        message: "Ese horario ya está reservado para ese día. Por favor, elija otro.",
-      }
-    }
-
-    // Simular una demora de red
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Crear el nuevo registro con ID del 1 al 16
-    const asignarId = () => {
-      // Obtener IDs ya utilizados
-      const idsUtilizados = registros.map((r) => r.id)
-
-      // Buscar el primer ID disponible entre 1 y 16
-      for (let i = 1; i <= 16; i++) {
-        if (!idsUtilizados.includes(i)) {
-          return i
-        }
-      }
-
-      // Si todos los IDs del 1 al 16 están ocupados, usar el siguiente disponible
-      return registros.length > 0 ? Math.max(...idsUtilizados) + 1 : 1
-    }
-
-    // Crear el nuevo registro
-    const registro: Registro = {
-      ...nuevoRegistro,
-      id: asignarId(),
-      fechaRegistro: new Date().toISOString(),
-      estado: "confirmado",
-    }
-
-    // Agregar el registro a la lista
-    setRegistros((prev) => [...prev, registro])
-
-    return {
-      success: true,
-      message: "Registro completado con éxito.",
+    } catch (error) {
+      console.error('Error al agregar registro:', error)
+      return { success: false, message: 'Ocurrió un error al registrar' }
     }
   }
 
-  // Función para eliminar un registro por ID
-  const eliminarRegistro = (id: number) => {
-    setRegistros((prev) => prev.filter((r) => r.id !== id))
+  // Función para eliminar un registro via API
+  const eliminarRegistro = async (id: number) => {
+    try {
+      const res = await fetch(`/api/registros/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Error al eliminar registro')
+      setRegistros((prev) => prev.filter((r) => r.id !== id))
+      return { success: true }
+    } catch (error) {
+      console.error('Error al eliminar registro:', error)
+      return { success: false, message: 'Ocurrió un error al eliminar' }
+    }
   }
 
   return (
