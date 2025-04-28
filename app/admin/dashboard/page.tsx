@@ -9,14 +9,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Calendar, Download, Search, Users } from "lucide-react"
+import { ArrowLeft, Calendar, Download, Search, Users, Trash } from "lucide-react"
 import { useRegistros } from "@/lib/store"
 import { toast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import * as XLSX from "xlsx"
 
 export default function AdminDashboardPage() {
-  const { registros } = useRegistros()
+  const { registros, eliminarRegistro } = useRegistros()
   const [searchTerm, setSearchTerm] = useState("")
   const [diaFilter, setDiaFilter] = useState("todos")
 
@@ -264,6 +264,7 @@ export default function AdminDashboardPage() {
                         <TableHead>Día</TableHead>
                         <TableHead>Hora</TableHead>
                         <TableHead>Estado</TableHead>
+                        <TableHead>Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -293,11 +294,19 @@ export default function AdminDashboardPage() {
                                     : "Cancelado"}
                               </Badge>
                             </TableCell>
+                            <TableCell>
+                              <Button variant="outline" size="sm" onClick={() => {
+                                eliminarRegistro(reserva.id)
+                                toast({ title: "Registro eliminado", description: `El registro con ID ${reserva.id} ha sido eliminado.` })
+                              }}>
+                                <Trash className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-4 text-gray-500">
+                          <TableCell colSpan={8} className="text-center py-4 text-gray-500">
                             No se encontraron reservas con los criterios de búsqueda
                           </TableCell>
                         </TableRow>
@@ -475,7 +484,7 @@ export default function AdminDashboardPage() {
       <Toaster />
       <footer className="bg-gray-50 py-6 border-t border-gray-200 mt-8">
         <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
-          <p>© {new Date().getFullYear()} CORAZÓN SEGURO. Todos los derechos reservados.</p>
+          <p> {new Date().getFullYear()} CORAZÓN SEGURO. Todos los derechos reservados.</p>
           <p className="mt-2">
             Desarrollado por{" "}
             <a
