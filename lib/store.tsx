@@ -21,6 +21,7 @@ type RegistroContextType = {
     registro: Omit<Registro, "id" | "fechaRegistro" | "estado">,
   ) => Promise<{ success: boolean; message: string }>
   existeDocumento: (documento: string) => boolean
+  eliminarRegistro: (id: number) => void
 }
 
 const RegistroContext = createContext<RegistroContextType | undefined>(undefined)
@@ -112,12 +113,18 @@ export function RegistroProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Función para eliminar un registro por ID
+  const eliminarRegistro = (id: number) => {
+    setRegistros((prev) => prev.filter((r) => r.id !== id))
+  }
+
   return (
     <RegistroContext.Provider
       value={{
         registros,
         agregarRegistro,
         existeDocumento,
+        eliminarRegistro,
       }}
     >
       {children}
