@@ -21,10 +21,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const newRegistro = await req.json()
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'unknown'
     const json = await fs.readFile(filePath, 'utf-8')
     const registros: Registro[] = JSON.parse(json)
     const maxId = registros.reduce((max: number, r: Registro) => (r.id > max ? r.id : max), 0)
     const registro = {
+      ip,
       id: maxId + 1,
       fechaRegistro: new Date().toISOString(),
       estado: 'confirmado',
