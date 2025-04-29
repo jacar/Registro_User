@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import type { Registro } from "@/lib/store"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -52,6 +53,8 @@ export default function RegistroPage() {
 
   const [loading, setLoading] = useState(false)
 
+  const [selectedRegistro, setSelectedRegistro] = useState<Registro | null>(null)
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -64,6 +67,8 @@ export default function RegistroPage() {
   const handleHorarioChange = (value: string) => {
     setFormData((prev) => ({ ...prev, horarioId: value }))
   }
+
+  const handleViewRegistro = (registro: Registro) => setSelectedRegistro(registro)
 
   // Validar documento en tiempo real
   const validarDocumento = () => {
@@ -327,6 +332,40 @@ export default function RegistroPage() {
         </Card>
       </div>
       <Toaster />
+      {registros.length > 0 && (
+        <div className="container mx-auto px-4 mt-10">
+          <h2 className="text-xl font-semibold mb-4">Registros Existentes</h2>
+          <ul className="space-y-2">
+            {registros.map((r) => (
+              <li key={r.id} className="flex justify-between items-center p-4 bg-white rounded shadow">
+                <span>{`${r.nombreCompleto} - ${r.dia} ${r.hora}`}</span>
+                <Button variant="outline" size="sm" onClick={() => handleViewRegistro(r)}>
+                  Ver
+                </Button>
+              </li>
+            ))}
+          </ul>
+          {selectedRegistro && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Detalle Registro #{selectedRegistro.id}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p><strong>Nombre:</strong> {selectedRegistro.nombreCompleto}</p>
+                <p><strong>Documento:</strong> {selectedRegistro.numeroDocumento}</p>
+                <p><strong>Celular:</strong> {selectedRegistro.numeroCelular}</p>
+                <p><strong>Fecha:</strong> {selectedRegistro.dia}</p>
+                <p><strong>Hora:</strong> {selectedRegistro.hora}</p>
+                <p><strong>Registrado en:</strong> {new Date(selectedRegistro.fechaRegistro).toLocaleString()}</p>
+                <p><strong>Estado:</strong> {selectedRegistro.estado}</p>
+              </CardContent>
+              <CardFooter>
+                <Button size="sm" onClick={() => setSelectedRegistro(null)}>Cerrar</Button>
+              </CardFooter>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   )
 }
